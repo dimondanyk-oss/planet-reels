@@ -4,27 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Earth Ecosystem & Wallet</title>
-    <!-- Three.js & OrbitControls -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: #030712;
-            color: #f3f4f6;
+            background-color: #050811;
+            color: #ffffff;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
+            display: flex;
+            flex-direction: column;
         }
 
         #canvas-container {
@@ -36,336 +32,501 @@
             z-index: 1;
         }
 
-        /* UI Layer */
-        .ui-layer {
+        /* Верхняя шапка */
+        .header {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-        }
-
-        .interactive {
-            pointer-events: auto;
-        }
-
-        /* Header / Navigation */
-        header {
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px 24px;
-            border-radius: 16px;
+            z-index: 10;
+            background: linear-gradient(to bottom, rgba(5,8,17,0.8), rgba(5,8,17,0));
         }
 
         .logo {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #38bdf8;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #00d2ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        nav {
-            display: flex;
-            gap: 12px;
-        }
-
-        .nav-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #9ca3af;
-            padding: 8px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .logo-icon {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #00d2ff;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-weight: 500;
-        }
-
-        .nav-btn:hover, .nav-btn.active {
-            background: #0284c7;
-            color: #ffffff;
-            border-color: #38bdf8;
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
-        }
-
-        /* Content Overlay / Modals */
-        .content-panel {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            padding: 28px;
-            width: 90%;
-            max-width: 500px;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-        }
-
-        .content-panel.active {
-            opacity: 1;
-            visibility: visible;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .panel-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: #f8fafc;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        .close-btn:hover { color: #fff; }
-
-        /* Wallet Section */
-        .wallet-card {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .balance-label { font-size: 0.85rem; color: #94a3b8; margin-bottom: 4px; }
-        .balance-val { font-size: 2rem; font-weight: 700; color: #38bdf8; }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .action-btn {
-            background: #0284c7;
-            border: none;
-            color: white;
-            padding: 12px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .action-btn:hover { background: #0369a1; }
-        .action-btn.secondary {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .action-btn.secondary:hover { background: rgba(255, 255, 255, 0.1); }
-
-        /* Tariffs Section */
-        .tariffs-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .tariff-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: border-color 0.2s;
-        }
-
-        .tariff-card:hover {
-            border-color: #38bdf8;
-        }
-
-        .tariff-info h4 { color: #f3f4f6; margin-bottom: 2px; }
-        .tariff-info p { font-size: 0.8rem; color: #9ca3af; }
-        .tariff-price { font-weight: 700; color: #38bdf8; font-size: 1.1rem; }
-
-        /* Footer Info */
-        footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: #6b7280;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
         }
 
         .status-badge {
             display: flex;
             align-items: center;
-            gap: 6px;
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-            padding: 4px 12px;
+            gap: 8px;
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            padding: 6px 12px;
             border-radius: 20px;
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-size: 0.8rem;
+            color: #00d2ff;
+            backdrop-filter: blur(5px);
         }
 
         .status-dot {
             width: 8px;
             height: 8px;
-            background: #10b981;
+            background-color: #00ff88;
             border-radius: 50%;
-            box-shadow: 0 0 8px #10b981;
+            box-shadow: 0 0 8px #00ff88;
+        }
+
+        /* Контентные модальные окна */
+        .content-container {
+            position: absolute;
+            top: 70px;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            pointer-events: none;
+        }
+
+        .tab-content {
+            background: rgba(10, 16, 30, 0.85);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 100%;
+            overflow-y: auto;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            pointer-events: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #00d2ff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+            padding-bottom: 10px;
+        }
+
+        /* Баланс карточка */
+        .balance-card {
+            background: linear-gradient(135deg, rgba(0,210,255,0.15), rgba(0,85,255,0.15));
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .balance-title {
+            font-size: 0.85rem;
+            color: #a0aec0;
+            margin-bottom: 5px;
+        }
+
+        .balance-amount {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+
+        .balance-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: #00d2ff;
+            color: #050811;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Списки и задания */
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .list-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .item-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .item-desc {
+            font-size: 0.8rem;
+            color: #a0aec0;
+        }
+
+        .item-reward {
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        /* Нижняя панель навигации */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background: rgba(10, 16, 30, 0.95);
+            border-top: 1px solid rgba(0, 210, 255, 0.2);
+            backdrop-filter: blur(15px);
+            z-index: 20;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 5px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: #718096;
+            text-decoration: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 20%;
+            height: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-item span {
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .nav-item.active {
+            color: #00d2ff;
+        }
+
+        .nav-item.active svg {
+            transform: translateY(-2px);
+            filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.8));
+        }
+
+        /* Скрытие полосы прокрутки */
+        .tab-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .tab-content::-webkit-scrollbar-thumb {
+            background: rgba(0, 210, 255, 0.3);
+            border-radius: 4px;
         }
     </style>
+    <!-- Подключение Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
     <div id="canvas-container"></div>
 
-    <div class="ui-layer">
-        <header class="interactive">
-            <div class="logo">
-                <i class="fa-solid me-2 fa-globe"></i> EARTH CORE
-            </div>
-            <nav>
-                <button class="nav-btn active" onclick="switchTab('main')"><i class="fa-solid fa-house"></i> Главная</button>
-                <button class="nav-btn" onclick="switchTab('tariffs')"><i class="fa-solid fa-layer-group"></i> Тарифы</button>
-                <button class="nav-btn" onclick="switchTab('wallet')"><i class="fa-solid fa-wallet"></i> Кошелек</button>
-            </nav>
-        </header>
-
-        <!-- Wallet Panel -->
-        <div id="panel-wallet" class="content-panel interactive">
-            <div class="panel-header">
-                <div class="panel-title"><i class="fa-solid fa-wallet"></i> Мой Кошелек</div>
-                <button class="close-btn" onclick="closePanels()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="wallet-card">
-                <div class="balance-label">Баланс аккаунта</div>
-                <div class="balance-val" id="balance-amount">$1,250.00</div>
-            </div>
-            <div class="action-grid">
-                <button class="action-btn" onclick="addFunds()"><i class="fa-solid fa-plus"></i> Пополнить</button>
-                <button class="action-btn secondary" onclick="withdrawFunds()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Вывести</button>
-            </div>
+    <!-- Верхняя шапка -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">🌐</div>
+            EARTH CORE
         </div>
-
-        <!-- Tariffs Panel -->
-        <div id="panel-tariffs" class="content-panel interactive">
-            <div class="panel-header">
-                <div class="panel-title"><i class="fa-solid fa-layer-group"></i> Тарифные планы</div>
-                <button class="close-btn" onclick="closePanels()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="tariffs-list">
-                <div class="tariff-card">
-                    <div class="tariff-info">
-                        <h4>Базовый</h4>
-                        <p>Доступ к стандартной орбите</p>
-                    </div>
-                    <div class="tariff-price">$10/мес</div>
-                    <button class="action-btn secondary" onclick="selectTariff('Базовый')">Выбрать</button>
-                </div>
-                <div class="tariff-card">
-                    <div class="tariff-info">
-                        <h4>Продвинутый</h4>
-                        <p>Высокая скорость обработки</p>
-                    </div>
-                    <div class="tariff-price">$29/мес</div>
-                    <button class="action-btn" onclick="selectTariff('Продвинутый')">Выбрать</button>
-                </div>
-                <div class="tariff-card">
-                    <div class="tariff-info">
-                        <h4>VIP Экосистема</h4>
-                        <p>Полный приоритетный доступ</p>
-                    </div>
-                    <div class="tariff-price">$99/мес</div>
-                    <button class="action-btn secondary" onclick="selectTariff('VIP')">Выбрать</button>
-                </div>
-            </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            Сеть активна
         </div>
-
-        <footer class="interactive">
-            <div class="status-badge">
-                <div class="status-dot"></div> Сеть активна
-            </div>
-            <div>3D Engine: Three.js</div>
-        </footer>
     </div>
 
+    <!-- Контент вкладок -->
+    <div class="content-container">
+
+        <!-- 1. Главная (свернуто по умолчанию для обзора 3D) -->
+        <div id="tab-home" class="tab-content">
+            <h2>Главная</h2>
+            <div class="balance-card">
+                <div class="balance-title">Текущий баланс</div>
+                <div class="balance-amount">$1,250.00</div>
+                <div class="balance-actions">
+                    <button class="btn btn-primary" onclick="switchTab('tasks')">Заработать</button>
+                    <button class="btn btn-secondary" onclick="switchTab('wallet')">Кошелек</button>
+                </div>
+            </div>
+            <div class="item-list">
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">Экосистема 3D Earth</div>
+                        <div class="item-desc">Интерактивный глобус подключен к сети</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Задания -->
+        <div id="tab-tasks" class="tab-content">
+            <h2>
+                Задания
+                <span style="font-size:0.8rem; color:#00ff88;">Выполнено: 3/10</span>
+            </h2>
+            <div class="item-list">
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">Просмотр рекламы</div>
+                        <div class="item-desc">30 секунд видео</div>
+                    </div>
+                    <button class="btn btn-primary" style="flex:none; padding:6px 12px;" onclick="addReward(0.50, this)">+$0.50</button>
+                </div>
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">Подписка на Telegram</div>
+                        <div class="item-desc">Официальный канал</div>
+                    </div>
+                    <button class="btn btn-primary" style="flex:none; padding:6px 12px;" onclick="addReward(1.00, this)">+$1.00</button>
+                </div>
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">Ежедневный вход</div>
+                        <div class="item-desc">Бонус за посещение</div>
+                    </div>
+                    <button class="btn btn-secondary" style="flex:none; padding:6px 12px;" disabled>Готово</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Тарифы -->
+        <div id="tab-plans" class="tab-content">
+            <h2>Тарифные планы</h2>
+            <div class="item-list">
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">Базовый</div>
+                        <div class="item-desc">Доступ к базовой орбите</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="item-reward">$10/мес</div>
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.75rem; margin-top:4px;">Выбрать</button>
+                    </div>
+                </div>
+                <div class="list-item" style="border-color: rgba(0, 210, 255, 0.4);">
+                    <div class="item-info">
+                        <div class="item-title" style="color:#00d2ff;">Продвинутый</div>
+                        <div class="item-desc">Высокая скорость обработки</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="item-reward">$29/мес</div>
+                        <button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem; margin-top:4px;">Выбрать</button>
+                    </div>
+                </div>
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">VIP Экосистема</div>
+                        <div class="item-desc">Полный приоритетный доступ</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="item-reward">$99/мес</div>
+                        <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.75rem; margin-top:4px;">Выбрать</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Кошелек -->
+        <div id="tab-wallet" class="tab-content">
+            <h2>Мой Кошелек</h2>
+            <div class="balance-card">
+                <div class="balance-title">Баланс аккаунта</div>
+                <div class="balance-amount" id="wallet-balance">$1,250.00</div>
+                <div class="balance-actions">
+                    <button class="btn btn-primary">➕ Пополнить</button>
+                    <button class="btn btn-secondary">📤 Вывести</button>
+                </div>
+            </div>
+            <div class="item-list">
+                <div style="font-size:0.85rem; color:#a0aec0; margin-bottom:5px;">История операций</div>
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">Начисление за задание</div>
+                        <div class="item-desc">Сегодня, 12:45</div>
+                    </div>
+                    <div class="item-reward">+$1.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Рефералы -->
+        <div id="tab-ref" class="tab-content">
+            <h2>Рефералы</h2>
+            <div class="balance-card">
+                <div class="balance-title">Приглашено друзей</div>
+                <div class="balance-amount">12</div>
+                <div class="item-desc" style="margin-top:5px;">Заработок с рефералов: <b style="color:#00ff88;">$45.00</b></div>
+            </div>
+            <div class="item-list">
+                <div class="list-item">
+                    <div class="item-info">
+                        <div class="item-title">Ваша ссылка</div>
+                        <div class="item-desc">https://planet-reels.vercel.app/?ref=12345</div>
+                    </div>
+                    <button class="btn btn-primary" style="flex:none; padding:6px 12px;" onclick="alert('Ссылка скопирована!')">Копировать</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Нижнее меню (5 кнопок) -->
+    <nav class="bottom-nav">
+        <button class="nav-item" onclick="switchTab('home')" id="nav-home">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>Главная</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('tasks')" id="nav-tasks">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span>Задания</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('plans')" id="nav-plans">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+            <span>Тарифы</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('wallet')" id="nav-wallet">
+            <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+            <span>Кошелек</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('ref')" id="nav-ref">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <span>Рефералы</span>
+        </button>
+    </nav>
+
     <script>
-        // --- UI Logic ---
+        // Переключение вкладок
+        let activeTab = null;
+
+        function switchTab(tabId) {
+            const tabs = ['home', 'tasks', 'plans', 'wallet', 'ref'];
+            
+            tabs.forEach(t => {
+                const tabEl = document.getElementById(`tab-${t}`);
+                const navEl = document.getElementById(`nav-${t}`);
+                if (t === tabId && activeTab !== tabId) {
+                    tabEl.classList.add('active');
+                    navEl.classList.add('active');
+                } else {
+                    tabEl.classList.remove('active');
+                    navEl.classList.remove('active');
+                }
+            });
+
+            if (activeTab === tabId) {
+                activeTab = null; // Повторный клик скрывает окно для обзора 3D
+            } else {
+                activeTab = tabId;
+            }
+        }
+
+        // Логика добавления баланса
         let currentBalance = 1250.00;
-
-        function switchTab(tabName) {
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            closePanels();
-
-            if (tabName === 'wallet') {
-                document.getElementById('panel-wallet').classList.add('active');
-                event.currentTarget.classList.add('active');
-            } else if (tabName === 'tariffs') {
-                document.getElementById('panel-tariffs').classList.add('active');
-                event.currentTarget.classList.add('active');
-            } else {
-                document.querySelectorAll('.nav-btn')[0].classList.add('active');
-            }
+        function addReward(amount, btnElement) {
+            currentBalance += amount;
+            document.getElementById('wallet-balance').innerText = `$${currentBalance.toFixed(2)}`;
+            document.querySelectorAll('.balance-amount')[0].innerText = `$${currentBalance.toFixed(2)}`;
+            btnElement.innerText = "Готово";
+            btnElement.disabled = true;
+            btnElement.className = "btn btn-secondary";
+            btnElement.style.flex = "none";
         }
 
-        function closePanels() {
-            document.querySelectorAll('.content-panel').forEach(panel => panel.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.nav-btn')[0].classList.add('active');
-        }
-
-        function addFunds() {
-            currentBalance += 100;
-            document.getElementById('balance-amount').innerText = `$${currentBalance.toFixed(2)}`;
-        }
-
-        function withdrawFunds() {
-            if (currentBalance >= 50) {
-                currentBalance -= 50;
-                document.getElementById('balance-amount').innerText = `$${currentBalance.toFixed(2)}`;
-            } else {
-                alert('Недостаточно средств!');
-            }
-        }
-
-        function selectTariff(name) {
-            alert(`Вы выбрали тариф: ${name}`);
-            closePanels();
-        }
-
-        // --- Three.js Procedural 3D Earth ---
+        // --- Three.js 3D Earth Сцена ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        
+        scene.fog = new THREE.FogExp2(0x050811, 0.15);
+
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 4.5);
+        camera.position.z = 4.5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -375,101 +536,31 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.enableZoom = false;
+        controls.enableZoom = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
 
-        // Procedural Texture Generator for Earth
-        function createEarthTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024;
-            canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#0284c7';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#0f172a';
-            for (let i = 0; i < 800; i++) {
-                const x = Math.random() * canvas.width;
-                const y = Math.random() * canvas.height;
-                const radius = Math.random() * 20 + 5;
-                ctx.beginPath();
-                ctx.arc(x, y, radius, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        // Earth Sphere
-        const geometry = new THREE.SphereGeometry(1.5, 64, 64);
-        const material = new THREE.MeshPhongMaterial({
-            map: createEarthTexture(),
-            wireframe: false,
-            shininess: 25
+        // Создаем Землю (каркасную сетку с эффектом свечения)
+        const earthGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+        const earthMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00d2ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.4
         });
-        const earth = new THREE.Mesh(geometry, material);
+        const earth = new THREE.Mesh(earthGeometry, earthMaterial);
         scene.add(earth);
 
-        // Atmosphere Glow
-        const atmosphereGeo = new THREE.SphereGeometry(1.55, 64, 64);
-        const atmosphereMat = new THREE.MeshBasicMaterial({
-            color: 0x38bdf8,
+        // Внутреннее ядро
+        const innerGeometry = new THREE.SphereGeometry(1.48, 32, 32);
+        const innerMaterial = new THREE.MeshBasicMaterial({
+            color: 0x050811,
             transparent: true,
-            opacity: 0.15,
-            wireframe: true
+            opacity: 0.9
         });
-        const atmosphere = new THREE.Mesh(atmosphereGeo, atmosphereMat);
-        scene.add(atmosphere);
+        const innerEarth = new THREE.Mesh(innerGeometry, innerMaterial);
+        scene.add(innerEarth);
 
-        // Orbital Ring
-        const ringGeo = new THREE.RingGeometry(2.0, 2.02, 64);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.x = Math.PI / 2;
-        scene.add(ring);
-
-        // Starfield Particles
-        const starsGeo = new THREE.BufferGeometry();
-        const starsCount = 1200;
-        const starPositions = new Float32Array(starsCount * 3);
-
-        for(let i = 0; i < starsCount * 3; i++) {
-            starPositions[i] = (Math.random() - 0.5) * 20;
-        }
-
-        starsGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02 });
-        const starField = new THREE.Points(starsGeo, starsMat);
-        scene.add(starField);
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
-        dirLight.position.set(5, 3, 5);
-        scene.add(dirLight);
-
-        // Animation Loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            earth.rotation.y += 0.002;
-            atmosphere.rotation.y += 0.002;
-            ring.rotation.z -= 0.001;
-
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Responsive Resizing
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
-</html>
+        // Атмосфера (внешнее кольцо)
+        const ringGeometry = new THREE.RingGeometry(1.7, 1.75, 64);
+        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x00d2ff, side: THREE.DoubleSide, transparent: true, opacity: 0.
